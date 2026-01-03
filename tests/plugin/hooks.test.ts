@@ -30,8 +30,8 @@ describe("Plugin Hooks & Setup", () => {
     });
 
     it("should block builtin todo tools", async () => {
-        const plugin = missionControlPlugin();
-        const hook = (plugin as any)["tool.execute.before"];
+        const plugin = await missionControlPlugin();
+        const hook = plugin.hooks["tool.execute.before"];
 
         expect(hook).toBeDefined();
 
@@ -42,12 +42,12 @@ describe("Plugin Hooks & Setup", () => {
         await expect(hook({ tool: "mission_control" })).resolves.toBeUndefined();
     });
 
-    it("should auto-create opencode.json if missing", () => {
-        backupConfig(); 
+    it("should auto-create opencode.json if missing", async () => {
+        backupConfig();
         expect(fs.existsSync(configPath)).toBe(false);
 
-        
-        missionControlPlugin();
+
+        await missionControlPlugin();
 
         
         expect(fs.existsSync(configPath)).toBe(true);

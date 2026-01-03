@@ -8,12 +8,13 @@ import { join } from "path";
 import { TaskLockedError } from "../../src/types/errors";
 
 describe("Concurrency & Isolation", () => {
-    const TEST_DB_PATH = join(import.meta.dir, `../../temp_test_race_bdd_${Math.random().toString(36).slice(2)}.sqlite`);
+    let TEST_DB_PATH: string;
     let store: MissionStore;
     let manager: MissionManager;
     let missionId: string;
 
     beforeEach(() => {
+        TEST_DB_PATH = join(import.meta.dir, `../../temp_test_race_bdd_${Math.random().toString(36).slice(2)}.sqlite`);
         store = new MissionStore(TEST_DB_PATH);
         manager = new MissionManager(store);
         missionId = getContextMissionId();

@@ -43,7 +43,7 @@ export class MissionManager {
         if (!mission) throw new MissionNotFoundError(validatedInput.mission_id);
 
         const task: Task = {
-            id: generateSmartId(mission.title),
+            id: generateSmartId(title),
             mission_id: validatedInput.mission_id,
             title: validatedInput.title,
             description: validatedInput.description,

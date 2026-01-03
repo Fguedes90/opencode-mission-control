@@ -52,7 +52,7 @@ Once you have \`ready\` tasks:
     \`\`\`
 `;
 
-export const missionControlPlugin = async ({ client }: { client: any }) => {
+export const missionControlPlugin = async ({ client }: { client?: any } = {}) => {
     const store = new MissionStore();
     const missionManager = new MissionManager(store);
     const missionId = getContextMissionId();
@@ -91,6 +91,7 @@ export const missionControlPlugin = async ({ client }: { client: any }) => {
         tools,
         hooks: {
             "session.created": async ({ session }: { session: any }) => {
+                if (!client) return;
                 try {
                     await client.session.prompt({
                         path: { id: session.id },
