@@ -35,7 +35,6 @@ export const DependencySchema = z.object({
   mission_id: z.string(),
 });
 
-// Input schemas
 export const CreateTaskInputSchema = z.object({
   mission_id: z.string(),
   title: z.string(),

@@ -39,29 +39,18 @@ export class MissionStore {
     }
 
     private migrate() {
-        // Basic migration strategy: read schema.sql and execute
-        // In a real production app we'd have versioned migrations
-        // Resolve path relative to THIS file url
         const schemaPath = new URL('./schema.sql', import.meta.url).pathname;
         const schema = readFileSync(schemaPath, "utf-8");
-
-        // Execute line by line or split by semicolon to ensure multiple statements run if specific driver needs it, 
-        // but bun:sqlite exec can handle multiple statements usually. 
-        // However, if there are issues, we might want to log.
         const statements = schema.split(';').map(s => s.trim()).filter(s => s.length > 0);
         for (const stmt of statements) {
             this.db.exec(stmt);
         }
     }
 
-    // --- Transactions ---
-
     runTransaction<T>(callback: () => T): T {
         const transaction = this.db.transaction(callback);
         return transaction();
     }
-
-    // --- Missions ---
 
     createMission(mission: Mission): void {
         const stmt = this.db.prepare(`
@@ -80,8 +69,6 @@ export class MissionStore {
         const stmt = this.db.prepare("SELECT * FROM missions WHERE id = ?");
         return stmt.get(id) as Mission | null;
     }
-
-    // --- Tasks ---
 
     createTask(task: Task): void {
         const stmt = this.db.prepare(`
@@ -129,8 +116,6 @@ export class MissionStore {
         });
     }
 
-    // --- Dependencies ---
-
     addDependency(dependency: Dependency): void {
         const stmt = this.db.prepare(`
       INSERT INTO dependencies (blocker_id, blocked_id, mission_id)
@@ -144,13 +129,11 @@ export class MissionStore {
     }
 
     getDependencies(taskId: string): string[] {
-        // Returns IDs of tasks that block the given task
         const stmt = this.db.prepare("SELECT blocker_id FROM dependencies WHERE blocked_id = ?");
         return stmt.all(taskId).map((row: any) => row.blocker_id);
     }
 
     getDependents(taskId: string): string[] {
-        // Returns IDs of tasks blocked by the given task
         const stmt = this.db.prepare("SELECT blocked_id FROM dependencies WHERE blocker_id = ?");
         return stmt.all(taskId).map((row: any) => row.blocked_id);
     }
@@ -173,13 +156,7 @@ export class MissionStore {
         return result !== null;
     }
 
-    // --- Queries ---
-
     getReadyTasks(missionId: string, limit: number = 10): Task[] {
-        // Tasks that are pending AND have no incomplete blockers
-        // "Incomplete" means status != 'completed'
-        // We also check that the task itself is pending
-
         const query = `
       SELECT t.* 
       FROM tasks t

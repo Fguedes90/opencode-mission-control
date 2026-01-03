@@ -4,24 +4,19 @@ import { unlinkSync, existsSync } from "fs";
 import { join } from "path";
 
 describe("Feature: Mission Persistence", () => {
-    // Use a unique temp database for each test run to ensure isolation
-    const TEST_DB_PATH = join(import.meta.dir, `../../temp_test_mission_bdd_${Math.random().toString(36).slice(2)}.sqlite`);
-
     let store: MissionStore;
+    let tempDbPath: string;
 
     beforeEach(() => {
-        // cleanup not really needed if we use random paths but good practice if random collision (improbable)
-        store = new MissionStore(TEST_DB_PATH);
+        tempDbPath = `.test-db-${Date.now()}-${Math.random()}.sqlite`;
+        store = new MissionStore(tempDbPath);
     });
 
     afterEach(() => {
         try {
-            if (store) store.close();
-        } catch (e) { }
-
-        // Wait a small tick? No, synchronous unlink should work if closed.
-        // Try deleting main, wal, shm
-        [TEST_DB_PATH, `${TEST_DB_PATH}-wal`, `${TEST_DB_PATH}-shm`].forEach(p => {
+            store.close();
+        } catch (e) {}
+        [tempDbPath, `${tempDbPath}-wal`, `${tempDbPath}-shm`].forEach(p => {
             if (existsSync(p)) {
                 try {
                     unlinkSync(p);
@@ -32,7 +27,6 @@ describe("Feature: Mission Persistence", () => {
 
     describe("Scenario: Creating and retrieving missions", () => {
         it("should successfully store and retrieve a new mission", () => {
-            // Given a new mission data
             const missionId = "test-mission";
             const missionData = {
                 id: missionId,
@@ -41,10 +35,7 @@ describe("Feature: Mission Persistence", () => {
                 created_at: new Date().toISOString()
             };
 
-            // When creating the mission
             store.createMission(missionData);
-
-            // Then it should be retrievable by ID
             const retrieved = store.getMission(missionId);
             expect(retrieved).not.toBeNull();
             expect(retrieved?.title).toBe("Test Mission");

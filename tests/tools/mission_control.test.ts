@@ -71,7 +71,7 @@ describe("Tool: mission_control", () => {
 
         const result = await mission_control.handler(manager, {
             command: "claim",
-            payload: { task_id: t1.id }
+            payload: { task_id: t1.id, agent_id: "test-agent" }
         });
 
         expect(result.success).toBe(true);
@@ -220,7 +220,7 @@ describe("Tool: mission_control", () => {
         // Claim and complete API design
         await mission_control.handler(manager, {
             command: "claim",
-            payload: { task_id: subTask1Id }
+            payload: { task_id: subTask1Id, agent_id: "agent-1" }
         });
         await mission_control.handler(manager, {
             command: "update",
@@ -240,7 +240,7 @@ describe("Tool: mission_control", () => {
         // Claim and work on login logic
         await mission_control.handler(manager, {
             command: "claim",
-            payload: { task_id: subTask2Id }
+            payload: { task_id: subTask2Id, agent_id: "agent-1" }
         });
         await mission_control.handler(manager, {
             command: "update",
@@ -299,7 +299,7 @@ describe("Tool: mission_control", () => {
         // Claim and mark as failed
         await mission_control.handler(manager, {
             command: "claim",
-            payload: { task_id: failingId }
+            payload: { task_id: failingId, agent_id: "agent-1" }
         });
         await mission_control.handler(manager, {
             command: "update",
@@ -327,7 +327,7 @@ describe("Tool: mission_control", () => {
         // Complete recovery
         await mission_control.handler(manager, {
             command: "claim",
-            payload: { task_id: recoveryId }
+            payload: { task_id: recoveryId, agent_id: "agent-1" }
         });
         await mission_control.handler(manager, {
             command: "update",

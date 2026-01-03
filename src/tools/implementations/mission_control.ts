@@ -4,20 +4,15 @@ import { getContextMissionId } from "../../utils/context.ts";
 type MissionCommand = "create" | "update" | "link" | "claim" | "query";
 
 interface MissionControlPayload {
-    // CREATE
     title?: string;
     description?: string;
     priority?: number;
     acceptance_criteria?: string;
-
-    // UPDATE / CLAIM / LINK
     task_id?: string;
-    agent_id?: string; // for claim
+    agent_id?: string;
     status?: "pending" | "in_progress" | "completed" | "failed";
     result_summary?: string;
-    target_task_id?: string; // used for linking: task_id blocks target_task_id
-
-    // QUERY
+    target_task_id?: string;
     view?: "ready" | "all" | "active";
     limit?: number;
 }
@@ -122,7 +117,6 @@ Commands:
                     return { success: false, message: `View '${view}' not supported` };
                 }
 
-                // Format as Rich Markdown Report
                 const report = tasks.map(t => {
                     const deps = manager.getDependencies(t.id);
                     return `

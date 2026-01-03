@@ -28,7 +28,6 @@ export class MissionManager {
     }
 
     createTask(missionId: string, title: string, description: string = '', priority: any = 4, acceptanceCriteria?: string): Task {
-        // Validate input
         const input: CreateTaskInput = {
             mission_id: missionId,
             title,
@@ -69,15 +68,13 @@ export class MissionManager {
             const blocked = this.store.getTask(blockedId);
             if (!blocked) throw new TaskNotFoundError(blockedId);
 
-            // Validate boundaries
-            if (blocker.mission_id !== blocked.mission_id) {
-                throw new InvalidOperationError(`Cannot link tasks from different missions: ${blocker.mission_id} vs ${blocked.mission_id}`);
-            }
+        if (blocker.mission_id !== blocked.mission_id) {
+            throw new InvalidOperationError(`Cannot link tasks from different missions: ${blocker.mission_id} vs ${blocked.mission_id}`);
+        }
 
-            // Validate cycle
-            if (this.store.hasCycle(blockerId, blockedId)) {
-                throw new CycleDetectedError(`Cycle detected: Task ${blockedId} is already a dependency of ${blockerId}`);
-            }
+        if (this.store.hasCycle(blockerId, blockedId)) {
+            throw new CycleDetectedError(`Cycle detected: Task ${blockedId} is already a dependency of ${blockerId}`);
+        }
 
             this.store.addDependency({
                 blocker_id: blockerId,
@@ -91,18 +88,6 @@ export class MissionManager {
         return this.store.runTransaction(() => {
             const task = this.store.getTask(taskId);
             if (!task) throw new TaskNotFoundError(taskId);
-
-            // We allow claiming 'pending' tasks if they are ready? 
-            // Spec says: "task only ready when dependencies resolved".
-            // Our Query `getReadyTasks` handles the dependency logic effectively.
-            // But a direct `claimTask` might bypass `getReadyTasks`.
-            // We should ideally check if it is 'ready' or capable of being ready.
-            // However, usually the agent calls `getReadyTasks` first.
-            // Let's enforce that the task must be in a state that allows claiming.
-            // Usually 'pending' is the basic state. The 'ready' status in the DB might not be explicitly stored 
-            // if we calculate it dynamically, BUT the spec has a 'ready' status in the text values.
-            // Let's assume for this implementation that `project_query` finds tasks that are effectively ready 
-            // and we just claim them. 
             // OR, we can strictly enforce: Is it blocked?
 
             const blockers = this.store.getDependencies(taskId);
@@ -130,11 +115,7 @@ export class MissionManager {
         const task = this.store.getTask(taskId);
         if (!task) throw new TaskNotFoundError(taskId);
 
-        // If completing, we might want to release the assignee?
-        // Or keep it for record. Usually 'completed' keeps the assignee history.
-        // If resetting to 'pending', we might clear assignee.
-
-        let targetAssignee = task.assignee;
+            let targetAssignee = task.assignee;
         if (status === 'pending' || status === 'ready') {
             targetAssignee = null;
         }
@@ -159,7 +140,6 @@ export class MissionManager {
     }
 
     getActiveTasks(missionId: string): Task[] {
-        // Active means currently 'in_progress'
         return this.store.getTasksByMission(missionId).filter(t => t.status === 'in_progress');
     }
 

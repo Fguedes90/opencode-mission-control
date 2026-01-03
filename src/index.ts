@@ -53,24 +53,15 @@ Once you have \`ready\` tasks:
 `;
 
 export const missionControlPlugin = async ({ client }: { client: any }) => {
-    // Initialize persistence
-    // In production this would likely be a fixed path in .opencode
     const store = new MissionStore();
-
-    // Initialize logic core
     const missionManager = new MissionManager(store);
-
-    // Force context init
     const missionId = getContextMissionId();
     console.log(`[Mission Control] Initialized for context: ${missionId}`);
-
-    // Ensure mission exists
     try {
         if (!store.getMission(missionId)) {
             missionManager.createMission(missionId, "Auto-Initialized Mission");
         }
     } catch (e) {
-        // Ignore if exists (race condition safe or if logic changes)
     }
 
     // Auto-Setup: Create opencode.json if not exists
@@ -90,8 +81,6 @@ export const missionControlPlugin = async ({ client }: { client: any }) => {
     } catch (e) {
         console.error("[Mission Control] Auto-Setup Failed:", e);
     }
-
-    // Register tools with the manager dependency
     const tools = registerTools(missionManager);
 
     return {
