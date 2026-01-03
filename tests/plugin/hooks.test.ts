@@ -7,7 +7,7 @@ describe("Plugin Hooks & Setup", () => {
     const configPath = path.join(process.cwd(), "opencode.json");
     let originalConfig: string | null = null;
 
-    // Backup existing config
+    
     const backupConfig = () => {
         if (fs.existsSync(configPath)) {
             originalConfig = fs.readFileSync(configPath, "utf-8");
@@ -15,12 +15,12 @@ describe("Plugin Hooks & Setup", () => {
         }
     };
 
-    // Restore config
+    
     const restoreConfig = () => {
         if (originalConfig !== null) {
             fs.writeFileSync(configPath, originalConfig);
         } else if (fs.existsSync(configPath)) {
-            // If we created it during test and didn't have one before, delete it
+            
             fs.unlinkSync(configPath);
         }
     };
@@ -35,21 +35,21 @@ describe("Plugin Hooks & Setup", () => {
 
         expect(hook).toBeDefined();
 
-        // Should block todoread
+        
         await expect(hook({ tool: "todoread" })).rejects.toThrow(/disabled/);
 
-        // Should allow other tools
+        
         await expect(hook({ tool: "mission_control" })).resolves.toBeUndefined();
     });
 
     it("should auto-create opencode.json if missing", () => {
-        backupConfig(); // Ensure file is gone
+        backupConfig(); 
         expect(fs.existsSync(configPath)).toBe(false);
 
-        // Init plugin
+        
         missionControlPlugin();
 
-        // Check if created
+        
         expect(fs.existsSync(configPath)).toBe(true);
 
         const content = JSON.parse(fs.readFileSync(configPath, "utf-8"));

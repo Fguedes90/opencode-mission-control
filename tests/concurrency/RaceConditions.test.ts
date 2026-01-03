@@ -28,17 +28,17 @@ describe("Concurrency & Isolation", () => {
     });
 
     it("should handle race condition: Multiple agents claiming same task", async () => {
-        // Given a single task
+        
         const t1 = manager.createTask(missionId, "High Value Task");
 
-        // When 5 agents try to claim it simultaneously
+        
         const agents = ["agent-1", "agent-2", "agent-3", "agent-4", "agent-5"];
 
-        // We simulate concurrency using Promise.all
-        // Note: SQLite is serialized by default in WAL, but we want to ensure logic holds
+        
+        
         const results = await Promise.allSettled(agents.map(agentId => {
-            // We bypass tool validation for speed/direct access, or use tool?
-            // Let's use manager directly to test core locking logic
+            
+            
             return new Promise((resolve, reject) => {
                 try {
                     const task = manager.claimTask(t1.id, agentId);
@@ -49,19 +49,19 @@ describe("Concurrency & Isolation", () => {
             });
         }));
 
-        // Then only ONE should succeed
+        
         const success = results.filter(r => r.status === "fulfilled");
         const failed = results.filter(r => r.status === "rejected");
 
         expect(success.length).toBe(1);
         expect(failed.length).toBe(4);
 
-        // Verify failure reasons
+        
         failed.forEach((r: any) => {
             expect(r.reason).toBeInstanceOf(TaskLockedError);
         });
 
-        // Verify successful assignee
+        
         const winner = (success[0] as any).value;
         const finalTask = store.getTask(t1.id);
         expect(finalTask?.assignee).toBe(winner.agentId);
@@ -69,13 +69,13 @@ describe("Concurrency & Isolation", () => {
     });
 
     it("should prevent cross-mission interference during parallel execution", async () => {
-        // Given 2 missions
+        
         const m1 = "mission-A";
         const m2 = "mission-B";
         manager.createMission(m1, "Mission A");
         manager.createMission(m2, "Mission B");
 
-        // When writing tasks to both concurrently
+        
         const tasksA = 50;
         const tasksB = 50;
 
@@ -95,14 +95,14 @@ describe("Concurrency & Isolation", () => {
 
         await Promise.all([pA, pB]);
 
-        // Then state should be isolated and correct
+        
         const resultA = store.getTasksByMission(m1);
         const resultB = store.getTasksByMission(m2);
 
         expect(resultA.length).toBe(tasksA);
         expect(resultB.length).toBe(tasksB);
 
-        // Verify IDs
+        
         resultA.forEach(t => expect(t.mission_id).toBe(m1));
         resultB.forEach(t => expect(t.mission_id).toBe(m2));
     });

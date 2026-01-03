@@ -32,10 +32,10 @@ describe("Tool: mission_control", () => {
             payload: { title: "Unified Task", priority: 4 }
         });
         expect(result.success).toBe(true);
-        const task = result.data as any; // Cast to any or Task to access properties
+        const task = result.data as any; 
         expect(task.title).toBe("Unified Task");
         expect(task.mission_id).toBe(missionId);
-        expect(task.id).toMatch(/^[a-z]{2}-[a-f0-9]{4}$/); // Expect Smart ID format: xx-1234
+        expect(task.id).toMatch(/^[a-z]{2}-[a-f0-9]{4}$/); 
     });
 
     it("should handle 'link' command", async () => {
@@ -96,7 +96,7 @@ describe("Tool: mission_control", () => {
         const ids = (result.data as any[]).map(t => t.id);
         expect(ids).toContain(t1.id);
         expect(ids).toContain(t3.id);
-        expect(ids).not.toContain(t2.id); // Blocked
+        expect(ids).not.toContain(t2.id); 
     });
 
     it("should handle 'query: all' command", async () => {
@@ -114,7 +114,7 @@ describe("Tool: mission_control", () => {
 
     it("should handle 'query: active' command", async () => {
         const t1 = manager.createTask(missionId, "Processing");
-        manager.claimTask(t1.id, "agent-1"); // Set status to in_progress
+        manager.claimTask(t1.id, "agent-1"); 
         const t2 = manager.createTask(missionId, "Pending");
 
         const result = await mission_control.handler(manager, {
@@ -128,7 +128,7 @@ describe("Tool: mission_control", () => {
     });
 
     it("should throw error for missing arguments", async () => {
-        // Create without title
+        
         const promise = mission_control.handler(manager, {
             command: "create",
             payload: { description: "No title" } as any
@@ -139,15 +139,15 @@ describe("Tool: mission_control", () => {
     it("should propagate core errors (e.g. cycles) through tool", async () => {
         const t1 = manager.createTask(missionId, "A");
         const t2 = manager.createTask(missionId, "B");
-        await manager.linkTasks(t1.id, t2.id); // A -> B
+        await manager.linkTasks(t1.id, t2.id); 
 
-        // Try B -> A via tool
+        
         const promise = mission_control.handler(manager, {
             command: "link",
             payload: { task_id: t2.id, target_task_id: t1.id }
         });
 
-        expect(promise).rejects.toThrow(); // CycleDetectedError
+        expect(promise).rejects.toThrow(); 
     });
 
     it("should accept acceptance_criteria and return rich report", async () => {
@@ -164,14 +164,14 @@ describe("Tool: mission_control", () => {
             payload: { view: "all" }
         });
 
-        // Verify Rich Report
+        
         expect(query.message).toContain("Mission Control Report");
         expect(query.message).toContain("✅ Criteria: Must pass all tests");
         expect(query.message).toContain("🆔");
     });
 
     it("should handle complete task lifecycle workflow", async () => {
-        // Create a feature development workflow
+        
         const featureTask = await mission_control.handler(manager, {
             command: "create",
             payload: { title: "Implement User Authentication", priority: 1, acceptance_criteria: "Users can login/logout securely" }
@@ -197,7 +197,7 @@ describe("Tool: mission_control", () => {
         });
         const subTask3Id = (subTask3.data as any).id;
 
-        // Link dependencies: API design -> login logic -> tests
+        
         await mission_control.handler(manager, {
             command: "link",
             payload: { task_id: subTask1Id, target_task_id: subTask2Id }
@@ -207,7 +207,7 @@ describe("Tool: mission_control", () => {
             payload: { task_id: subTask2Id, target_task_id: subTask3Id }
         });
 
-        // Check initial ready tasks (only API design and feature task)
+        
         const readyQuery1 = await mission_control.handler(manager, {
             command: "query",
             payload: { view: "ready" }
@@ -217,7 +217,7 @@ describe("Tool: mission_control", () => {
         expect(readyIds1).toContain(featureId);
         expect(readyIds1).toContain(subTask1Id);
 
-        // Claim and complete API design
+        
         await mission_control.handler(manager, {
             command: "claim",
             payload: { task_id: subTask1Id, agent_id: "agent-1" }
@@ -227,7 +227,7 @@ describe("Tool: mission_control", () => {
             payload: { task_id: subTask1Id, status: "completed", result_summary: "API designed" }
         });
 
-        // Now login logic should be ready
+        
         const readyQuery2 = await mission_control.handler(manager, {
             command: "query",
             payload: { view: "ready" }
@@ -237,7 +237,7 @@ describe("Tool: mission_control", () => {
         expect(readyIds2).toContain(featureId);
         expect(readyIds2).toContain(subTask2Id);
 
-        // Claim and work on login logic
+        
         await mission_control.handler(manager, {
             command: "claim",
             payload: { task_id: subTask2Id, agent_id: "agent-1" }
@@ -247,7 +247,7 @@ describe("Tool: mission_control", () => {
             payload: { task_id: subTask2Id, status: "in_progress", result_summary: "Started implementation" }
         });
 
-        // Check active tasks
+        
         const activeQuery = await mission_control.handler(manager, {
             command: "query",
             payload: { view: "active" }
@@ -255,13 +255,13 @@ describe("Tool: mission_control", () => {
         expect(activeQuery.count).toBe(1);
         expect((activeQuery.data as any)[0].id).toBe(subTask2Id);
 
-        // Complete login logic
+        
         await mission_control.handler(manager, {
             command: "update",
             payload: { task_id: subTask2Id, status: "completed", result_summary: "Login implemented" }
         });
 
-        // Now tests should be ready
+        
         const readyQuery3 = await mission_control.handler(manager, {
             command: "query",
             payload: { view: "ready" }
@@ -271,13 +271,13 @@ describe("Tool: mission_control", () => {
         expect(readyIds3).toContain(featureId);
         expect(readyIds3).toContain(subTask3Id);
 
-        // Complete the feature
+        
         await mission_control.handler(manager, {
             command: "update",
             payload: { task_id: featureId, status: "completed", result_summary: "Authentication feature complete" }
         });
 
-        // Final query should show all completed
+        
         const allQuery = await mission_control.handler(manager, {
             command: "query",
             payload: { view: "all" }
@@ -285,18 +285,18 @@ describe("Tool: mission_control", () => {
         expect(allQuery.count).toBe(4);
         const allTasks = allQuery.data as any[];
         const completedCount = allTasks.filter(t => t.status === "completed").length;
-        expect(completedCount).toBe(3); // 3 subtasks + feature
+        expect(completedCount).toBe(3); 
     });
 
     it("should handle workflow with error recovery", async () => {
-        // Create task that will fail
+        
         const failingTask = await mission_control.handler(manager, {
             command: "create",
             payload: { title: "Failing Task", priority: 1 }
         });
         const failingId = (failingTask.data as any).id;
 
-        // Claim and mark as failed
+        
         await mission_control.handler(manager, {
             command: "claim",
             payload: { task_id: failingId, agent_id: "agent-1" }
@@ -306,17 +306,17 @@ describe("Tool: mission_control", () => {
             payload: { task_id: failingId, status: "failed", result_summary: "Failed due to bug" }
         });
 
-        // Create recovery task
+        
         const recoveryTask = await mission_control.handler(manager, {
             command: "create",
             payload: { title: "Fix the bug", priority: 0 }
         });
         const recoveryId = (recoveryTask.data as any).id;
 
-        // Link recovery to failing task (but since failing is failed, recovery can proceed)
-        // Actually, dependencies are for blocking, but for recovery, perhaps create new task
+        
+        
 
-        // Query should show recovery as ready
+        
         const readyQuery = await mission_control.handler(manager, {
             command: "query",
             payload: { view: "ready" }
@@ -324,7 +324,7 @@ describe("Tool: mission_control", () => {
         expect(readyQuery.count).toBe(1);
         expect((readyQuery.data as any)[0].id).toBe(recoveryId);
 
-        // Complete recovery
+        
         await mission_control.handler(manager, {
             command: "claim",
             payload: { task_id: recoveryId, agent_id: "agent-1" }
@@ -334,7 +334,7 @@ describe("Tool: mission_control", () => {
             payload: { task_id: recoveryId, status: "completed", result_summary: "Bug fixed" }
         });
 
-        // Verify final state
+        
         const allQuery = await mission_control.handler(manager, {
             command: "query",
             payload: { view: "all" }
