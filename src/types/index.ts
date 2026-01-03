@@ -3,7 +3,6 @@ import {
   MissionStatusSchema,
   MissionSchema,
   TaskStatusSchema,
-  TaskPrioritySchema,
   TaskSchema,
   DependencySchema,
   CreateTaskInputSchema,
@@ -11,7 +10,6 @@ import {
 
 export type MissionStatus = z.infer<typeof MissionStatusSchema>;
 export type TaskStatus = z.infer<typeof TaskStatusSchema>;
-export type TaskPriority = z.infer<typeof TaskPrioritySchema>;
 
 export type Mission = z.infer<typeof MissionSchema>;
 export type Task = z.infer<typeof TaskSchema>;

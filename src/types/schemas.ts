@@ -24,9 +24,9 @@ export const TaskSchema = z.object({
   priority: TaskPrioritySchema,
   assignee: z.nullable(z.string()),
   created_at: DateStringSchema,
-  updated_at: DateStringSchema,
-  acceptance_criteria: z.union([z.string(), z.null()]).optional(),
-   metadata: z.record(z.unknown()),
+   updated_at: DateStringSchema,
+   acceptance_criteria: z.union([z.string(), z.null()]).optional(),
+    metadata: z.record(z.string(), z.unknown()),
 });
 
 export const DependencySchema = z.object({
@@ -42,5 +42,5 @@ export const CreateTaskInputSchema = z.object({
   priority: TaskPrioritySchema.optional().default(2),
   assignee: z.nullable(z.string()).optional().default(null),
   acceptance_criteria: z.union([z.string(), z.null()]).optional(),
-  metadata: z.record(z.unknown()).optional().default({}),
+  metadata: z.record(z.string(), z.unknown()).optional().default({}),
 });
