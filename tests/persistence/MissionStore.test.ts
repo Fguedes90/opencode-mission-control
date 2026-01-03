@@ -274,7 +274,7 @@ describe("Feature: Mission Persistence", () => {
     });
 
     describe("Scenario: Error Handling", () => {
-        it("should throw on invalid JSON in task metadata during getTask", () => {
+        it("should return empty metadata on invalid JSON in task metadata during getTask", () => {
             // Given a task with corrupted metadata JSON
             const missionId = "mission-error";
             store.createMission({ id: missionId, title: "Error Mission", status: "active", created_at: new Date().toISOString() });
@@ -284,15 +284,19 @@ describe("Feature: Mission Persistence", () => {
                 VALUES ('corrupt-task', '${missionId}', 'Corrupt Task', 'Desc', 'pending', 2, NULL, '${new Date().toISOString()}', '${new Date().toISOString()}', '{invalid json}')`);
 
             // When retrieving the task
-            // Then it should throw due to JSON.parse error
-            expect(() => store.getTask('corrupt-task')).toThrow();
+            const task = store.getTask('corrupt-task');
+
+            // Then it should return the task with empty metadata
+            expect(task).toBeDefined();
+            expect(task!.metadata).toEqual({});
         });
 
-        it("should throw on invalid JSON in metadata during getTasksByMission", () => {
+        it("should return empty metadata for corrupted tasks during getTasksByMission", () => {
             // Given a mission with a task having corrupted metadata
             const missionId = "mission-corrupt";
             store.createMission({ id: missionId, title: "Corrupt Mission", status: "active", created_at: new Date().toISOString() });
 
+            // Insert a good task
             store.createTask({
                 id: "good-task",
                 mission_id: missionId,
@@ -303,30 +307,40 @@ describe("Feature: Mission Persistence", () => {
                 assignee: null,
                 created_at: new Date().toISOString(),
                 updated_at: new Date().toISOString(),
+                acceptance_criteria: null,
                 metadata: { valid: true }
             });
 
-            // Insert another task with invalid JSON
+            // Insert directly with invalid JSON
             (store as any).db.exec(`INSERT INTO tasks (id, mission_id, title, description, status, priority, assignee, created_at, updated_at, metadata)
                 VALUES ('bad-task', '${missionId}', 'Bad Task', 'Desc', 'pending', 2, NULL, '${new Date().toISOString()}', '${new Date().toISOString()}', '[not json')`);
 
             // When retrieving all tasks for the mission
-            // Then it should throw due to JSON.parse error on the corrupted task
-            expect(() => store.getTasksByMission(missionId)).toThrow();
+            const tasks = store.getTasksByMission(missionId);
+
+            // Then it should return tasks with empty metadata for corrupted ones
+            expect(tasks).toHaveLength(2);
+            const badTask = tasks.find(t => t.id === 'bad-task');
+            expect(badTask!.metadata).toEqual({});
+            const goodTask = tasks.find(t => t.id === 'good-task');
+            expect(goodTask!.metadata).toEqual({ valid: true });
         });
 
-        it("should throw on invalid JSON in metadata during getReadyTasks", () => {
+        it("should return empty metadata for corrupted tasks during getReadyTasks", () => {
             // Given a mission with a ready task having corrupted metadata
             const missionId = "mission-ready-corrupt";
             store.createMission({ id: missionId, title: "Ready Corrupt Mission", status: "active", created_at: new Date().toISOString() });
 
-            // Insert a pending task with invalid JSON
+            // Insert directly with invalid JSON
             (store as any).db.exec(`INSERT INTO tasks (id, mission_id, title, description, status, priority, assignee, created_at, updated_at, metadata)
                 VALUES ('ready-corrupt', '${missionId}', 'Ready Corrupt', 'Desc', 'pending', 2, NULL, '${new Date().toISOString()}', '${new Date().toISOString()}', 'null invalid')`);
 
             // When querying for ready tasks
-            // Then it should throw due to JSON.parse error
-            expect(() => store.getReadyTasks(missionId)).toThrow();
+            const tasks = store.getReadyTasks(missionId);
+
+            // Then it should return the task with empty metadata
+            expect(tasks).toHaveLength(1);
+            expect(tasks[0].metadata).toEqual({});
         });
 
         it("should propagate errors from transaction callback", () => {

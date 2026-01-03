@@ -12,6 +12,7 @@ interface MissionControlPayload {
 
     // UPDATE / CLAIM / LINK
     task_id?: string;
+    agent_id?: string; // for claim
     status?: "pending" | "in_progress" | "completed" | "failed";
     result_summary?: string;
     target_task_id?: string; // used for linking: task_id blocks target_task_id
@@ -39,7 +40,7 @@ Commands:
 - 'create': Create a new task. Payload: { title (req), description, priority (1-5) }.
 - 'update': Update task status. Payload: { task_id (req), status (req), result_summary }.
 - 'link': Define dependency. Payload: { task_id (BLOCKER), target_task_id (BLOCKED) }.
-- 'claim': Lock a task. Payload: { task_id (req) }.
+ - 'claim': Lock a task. Payload: { task_id (req), agent_id (req) }.
 - 'query': Fetch tasks. Payload: { view: 'ready' | 'all' | 'active', limit }. ('ready' = runnable now).
 `,
     parameters: {
@@ -58,6 +59,7 @@ Commands:
                     acceptance_criteria: { type: "string" },
                     priority: { type: "number" },
                     task_id: { type: "string" },
+                    agent_id: { type: "string", description: "Agent ID for claiming tasks" },
                     status: { type: "string", enum: ["pending", "in_progress", "completed", "failed"] },
                     result_summary: { type: "string" },
                     target_task_id: { type: "string" },
@@ -100,9 +102,8 @@ Commands:
             }
 
             case "claim": {
-                if (!payload.task_id) throw new Error("task_id required for claim");
-                const agentId = "agent-default";
-                const task = manager.claimTask(payload.task_id, agentId);
+                if (!payload.task_id || !payload.agent_id) throw new Error("task_id and agent_id required for claim");
+                const task = manager.claimTask(payload.task_id, payload.agent_id);
                 return { success: true, data: task };
             }
 
@@ -123,15 +124,13 @@ Commands:
 
                 // Format as Rich Markdown Report
                 const report = tasks.map(t => {
-                    const deps = manager['store'].getDependencies(t.id); // Accessing store via manager (hacky but effective for now, or expose getDeps in manager)
-                    // Actually Manager doesn't expose getDependencies publicly, but we can assume empty if not critical, OR better:
-                    // The goal is "Rich Reports". Let's format nicely.
+                    const deps = manager.getDependencies(t.id);
                     return `
 🆔 **${t.id}** | 🚦 ${t.status.toUpperCase()} | 🚨 P${t.priority}
 Title: ${t.title}
 ${t.acceptance_criteria ? `✅ Criteria: ${t.acceptance_criteria}` : ''}
 ${t.description ? `📝 ${t.description}` : ''}
-   `.trim();
+    `.trim();
                 }).join('\n\n---\n\n');
 
                 const header = `## Mission Control Report: ${view.toUpperCase()} (${tasks.length} tasks)\n`;

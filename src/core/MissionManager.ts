@@ -1,17 +1,14 @@
 import { MissionStore } from "../persistence/MissionStore";
-import { GraphEngine } from "./GraphEngine";
 import { generateSmartId } from "../utils/id";
 import { Mission, Task, Dependency, TaskStatus, CreateTaskInput } from "../types";
 import { CreateTaskInputSchema } from "../types/schemas";
-import { MissionNotFoundError, TaskNotFoundError, InvalidOperationError, TaskLockedError } from "../types/errors";
+import { MissionNotFoundError, TaskNotFoundError, InvalidOperationError, TaskLockedError, CycleDetectedError } from "../types/errors";
 
 export class MissionManager {
     private store: MissionStore;
-    private graph: GraphEngine;
 
     constructor(store: MissionStore) {
         this.store = store;
-        this.graph = new GraphEngine();
     }
 
     createMission(id: string, title: string): Mission {
@@ -36,8 +33,10 @@ export class MissionManager {
             mission_id: missionId,
             title,
             description,
-            priority: priority !== undefined ? Number(priority) : undefined,
+            priority: priority !== undefined ? Number(priority) : 2,
             acceptance_criteria: acceptanceCriteria,
+            assignee: null,
+            metadata: {},
         };
         const validatedInput = CreateTaskInputSchema.parse(input);
 
@@ -50,7 +49,7 @@ export class MissionManager {
             title: validatedInput.title,
             description: validatedInput.description,
             status: 'pending',
-            priority: validatedInput.priority,
+            priority: validatedInput.priority!,
             assignee: validatedInput.assignee,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString(),
@@ -62,31 +61,29 @@ export class MissionManager {
         return task;
     }
 
-    async linkTasks(blockerId: string, blockedId: string): Promise<void> {
-        const blocker = this.store.getTask(blockerId);
-        if (!blocker) throw new TaskNotFoundError(blockerId);
+    linkTasks(blockerId: string, blockedId: string): void {
+        this.store.runTransaction(() => {
+            const blocker = this.store.getTask(blockerId);
+            if (!blocker) throw new TaskNotFoundError(blockerId);
 
-        const blocked = this.store.getTask(blockedId);
-        if (!blocked) throw new TaskNotFoundError(blockedId);
+            const blocked = this.store.getTask(blockedId);
+            if (!blocked) throw new TaskNotFoundError(blockedId);
 
-        // Validate boundaries
-        if (blocker.mission_id !== blocked.mission_id) {
-            throw new InvalidOperationError(`Cannot link tasks from different missions: ${blocker.mission_id} vs ${blocked.mission_id}`);
-        }
+            // Validate boundaries
+            if (blocker.mission_id !== blocked.mission_id) {
+                throw new InvalidOperationError(`Cannot link tasks from different missions: ${blocker.mission_id} vs ${blocked.mission_id}`);
+            }
 
-        // Validate cycle
-        // Note: GraphEngine logic used 'getDependencies' (parents). 
-        // We are passing a function that retrieves PARENTS of a task from the DB.
-        await this.graph.validateNoCycle(
-            (taskId) => this.store.getDependencies(taskId),
-            blockerId,
-            blockedId
-        );
+            // Validate cycle
+            if (this.store.hasCycle(blockerId, blockedId)) {
+                throw new CycleDetectedError(`Cycle detected: Task ${blockedId} is already a dependency of ${blockerId}`);
+            }
 
-        this.store.addDependency({
-            blocker_id: blockerId,
-            blocked_id: blockedId,
-            mission_id: blocker.mission_id
+            this.store.addDependency({
+                blocker_id: blockerId,
+                blocked_id: blockedId,
+                mission_id: blocker.mission_id
+            });
         });
     }
 
@@ -164,5 +161,9 @@ export class MissionManager {
     getActiveTasks(missionId: string): Task[] {
         // Active means currently 'in_progress'
         return this.store.getTasksByMission(missionId).filter(t => t.status === 'in_progress');
+    }
+
+    getDependencies(taskId: string): string[] {
+        return this.store.getDependencies(taskId);
     }
 }

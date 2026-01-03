@@ -9,6 +9,14 @@ export class MissionStore {
     private db: Database;
     private dbPath: string;
 
+    private safeParse(str: string | null): any {
+        try {
+            return str ? JSON.parse(str) : {};
+        } catch {
+            return {};
+        }
+    }
+
     constructor(dbPath: string = ".opencode/mission-control/mission.sqlite") {
         this.dbPath = dbPath;
         this.ensureDirectory();
@@ -102,7 +110,7 @@ export class MissionStore {
 
         return {
             ...task,
-            metadata: task.metadata ? JSON.parse(task.metadata) : {}
+            metadata: this.safeParse(task.metadata)
         };
     }
 
@@ -147,6 +155,24 @@ export class MissionStore {
         return stmt.all(taskId).map((row: any) => row.blocked_id);
     }
 
+    hasCycle(blockerId: string, blockedId: string): boolean {
+        if (blockerId === blockedId) return true;
+
+        const query = `
+            WITH RECURSIVE ancestors(id) AS (
+                SELECT blocker_id FROM dependencies WHERE blocked_id = $blockerId
+                UNION ALL
+                SELECT d.blocker_id FROM dependencies d
+                JOIN ancestors a ON d.blocked_id = a.id
+            )
+            SELECT 1 FROM ancestors WHERE id = $blockedId LIMIT 1;
+        `;
+
+        const stmt = this.db.prepare(query);
+        const result = stmt.get({ $blockerId: blockerId, $blockedId: blockedId });
+        return result !== null;
+    }
+
     // --- Queries ---
 
     getReadyTasks(missionId: string, limit: number = 10): Task[] {
@@ -175,7 +201,7 @@ export class MissionStore {
 
         return tasks.map(t => ({
             ...t,
-            metadata: JSON.parse(t.metadata)
+            metadata: this.safeParse(t.metadata)
         }));
     }
 
@@ -184,7 +210,7 @@ export class MissionStore {
         const tasks = stmt.all(missionId) as any[];
         return tasks.map(t => ({
             ...t,
-            metadata: JSON.parse(t.metadata)
+            metadata: this.safeParse(t.metadata)
         }));
     }
 

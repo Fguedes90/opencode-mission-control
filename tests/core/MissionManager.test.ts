@@ -52,7 +52,7 @@ describe("Feature: Mission Logic Management", () => {
     });
 
     describe("Scenario: Linking Tasks (High Level)", () => {
-        it("should prevent linking tasks across different missions", async () => {
+        it("should prevent linking tasks across different missions", () => {
             // Given two missions and tasks in each
             manager.createMission("m1", "M1");
             manager.createMission("m2", "M2");
@@ -61,21 +61,21 @@ describe("Feature: Mission Logic Management", () => {
 
             // When trying to link T1 -> T2
             // Then it should throw violation error
-            await expect(manager.linkTasks(t1.id, t2.id)).rejects.toThrow(InvalidOperationError);
+            expect(() => manager.linkTasks(t1.id, t2.id)).toThrow(InvalidOperationError);
         });
 
-        it("should validate and prevent cycles via GraphEngine", async () => {
+        it("should validate and prevent cycles", async () => {
             // Given tasks A and B in same mission
             manager.createMission("m1", "M1");
             const tA = manager.createTask("m1", "A");
             const tB = manager.createTask("m1", "B");
 
             // And A depends on B (B blocks A) -> B -> A
-            await manager.linkTasks(tB.id, tA.id);
+            manager.linkTasks(tB.id, tA.id);
 
             // When trying to make B depend on A (A -> B)
             // Then it should throw CycleDetectedError
-            await expect(manager.linkTasks(tA.id, tB.id)).rejects.toThrow(CycleDetectedError);
+            expect(() => manager.linkTasks(tA.id, tB.id)).toThrow(CycleDetectedError);
         });
     });
 
