@@ -27,7 +27,7 @@ export class MissionManager {
         return mission;
     }
 
-    createTask(missionId: string, title: string, description: string = '', priority: any = 4, acceptanceCriteria?: string): Task {
+    createTask(missionId: string, title: string, description: string = '', priority: any = 4, acceptanceCriteria?: string, metadata?: Record<string, unknown>): Task {
         const input: CreateTaskInput = {
             mission_id: missionId,
             title,
@@ -35,7 +35,7 @@ export class MissionManager {
             priority: priority !== undefined ? Number(priority) : 2,
             acceptance_criteria: acceptanceCriteria,
             assignee: null,
-            metadata: {},
+            metadata: metadata || {},
         };
         const validatedInput = CreateTaskInputSchema.parse(input);
 

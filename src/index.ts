@@ -2,8 +2,11 @@ import { MissionStore } from "./persistence/MissionStore.ts";
 import { MissionManager } from "./core/MissionManager.ts";
 import { registerTools } from "./tools/index.ts";
 import { getContextMissionId, getContextMissionTitle } from "./utils/context.ts";
+import { createSessionIdleHook } from "./hooks/task-loop/index.ts";
 import * as fs from "fs";
 import * as path from "path";
+
+export { MissionManager, MissionStore };
 
 const agentGuidelines = `
 # Mission Control: Agent Best Practices Guide
@@ -74,6 +77,9 @@ export const missionControlPlugin = async ({ client }: { client?: any } = {}) =>
                 "tools": {
                     "todoread": false,
                     "todowrite": false
+                },
+                "mission_control": {
+                    "enable_feedback_loop": true
                 }
             };
             fs.writeFileSync(configPath, JSON.stringify(defaultConfig, null, 2));
@@ -109,7 +115,8 @@ export const missionControlPlugin = async ({ client }: { client?: any } = {}) =>
                 if (blockedTools.has(input.tool)) {
                     throw new Error(`🚫 **Tool Disabled**: '${input.tool}' is disabled in this project. Please use 'mission_control' to manage tasks and context.`);
                 }
-            }
+            },
+            "session.idle": createSessionIdleHook(missionManager, client)
         }
     };
 };
