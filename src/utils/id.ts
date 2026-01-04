@@ -6,7 +6,7 @@ export function generateSmartId(title: string = "mission"): string {
     const hash = createHash("sha256")
         .update(crypto.randomUUID())
         .digest("hex")
-        .substring(0, 4);
+        .substring(0, 8);
 
     return `${prefix}-${hash}`;
 }

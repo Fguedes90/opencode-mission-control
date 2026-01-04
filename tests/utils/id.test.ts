@@ -5,29 +5,29 @@ import { generateSmartId } from "../../src/utils/id";
 describe("generateSmartId", () => {
     it("should generate ID with default title 'mission'", () => {
         const id = generateSmartId();
-        expect(id).toMatch(/^mi-[a-f0-9]{4}$/);
-        expect(id.length).toBe(7);
+        expect(id).toMatch(/^mi-[a-f0-9]{8}$/);
+        expect(id.length).toBe(11);
     });
 
     it("should generate ID with custom title", () => {
         const id = generateSmartId("test");
-        expect(id).toMatch(/^te-[a-f0-9]{4}$/);
-        expect(id.length).toBe(7);
+        expect(id).toMatch(/^te-[a-f0-9]{8}$/);
+        expect(id.length).toBe(11);
     });
 
     it("should handle empty title with default prefix", () => {
         const id = generateSmartId("");
-        expect(id).toMatch(/^mc-[a-f0-9]{4}$/);
+        expect(id).toMatch(/^mc-[a-f0-9]{8}$/);
     });
 
     it("should handle title with special characters", () => {
         const id = generateSmartId("test-123!");
-        expect(id).toMatch(/^te-[a-f0-9]{4}$/);
+        expect(id).toMatch(/^te-[a-f0-9]{8}$/);
     });
 
     it("should handle title starting with numbers", () => {
         const id = generateSmartId("123test");
-        expect(id).toMatch(/^te-[a-f0-9]{4}$/);
+        expect(id).toMatch(/^te-[a-f0-9]{8}$/);
     });
 
     it("should generate unique IDs on multiple calls", () => {
@@ -49,9 +49,9 @@ describe("generateSmartId", () => {
         fc.assert(
             fc.property(fc.string(), (title) => {
                 const id = generateSmartId(title);
-                expect(id).toMatch(/^([a-z]{1,2}|mc)-[a-f0-9]{4}$/);
-                expect(id.length).toBeGreaterThanOrEqual(6);
-                expect(id.length).toBeLessThanOrEqual(7);
+                expect(id).toMatch(/^([a-z]{1,2}|mc)-[a-f0-9]{8}$/);
+                expect(id.length).toBeGreaterThanOrEqual(10);
+                expect(id.length).toBeLessThanOrEqual(11);
             })
         );
     });

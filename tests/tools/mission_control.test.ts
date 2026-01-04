@@ -35,7 +35,7 @@ describe("Tool: mission_control", () => {
         const task = result.data as any; 
         expect(task.title).toBe("Unified Task");
         expect(task.mission_id).toBe(missionId);
-        expect(task.id).toMatch(/^[a-z]{2}-[a-f0-9]{4}$/); 
+        expect(task.id).toMatch(/^[a-z]{2}-[a-f0-9]{8}$/); 
     });
 
     it("should handle 'link' command", async () => {
